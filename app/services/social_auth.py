@@ -19,7 +19,7 @@ class SocialUserInfo:
     avatar_url: str | None = None
 
 async def verify_apple_token(token: str) -> SocialUserInfo:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(APPLE_JWKS_URL)
         jwks = resp.json()
 
@@ -35,21 +35,28 @@ async def verify_apple_token(token: str) -> SocialUserInfo:
     if key is None:
         raise UnauthorizedException("Apple 공개키를 찾을 수 없습니다")
 
-    payload = jwt.decode(
-        token,
-        key,
-        algorithms=["RS256"],
-        audience=settings.apple_client_id,
-        issuer="https://appleid.apple.com",
-    )
+    try:
+        payload = jwt.decode(
+            token,
+            key,
+            algorithms=["RS256"],
+            audience=settings.apple_client_id,
+            issuer="https://appleid.apple.com",
+        )
+    except jwt.PyJWTError:
+        raise UnauthorizedException("유효하지 않은 Apple 토큰입니다")
+
+    provider_id = payload.get("sub")
+    if provider_id is None:
+        raise UnauthorizedException("Apple 토큰에 사용자 정보가 없습니다")
 
     return SocialUserInfo(
-        provider_id=payload["sub"],
+        provider_id=provider_id,
         email=payload.get("email"),
     )
 
 async def verify_google_token(token: str) -> SocialUserInfo:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
             GOOGLE_TOKEN_INFO_URL, params={"id_token": token}
         )
@@ -62,14 +69,18 @@ async def verify_google_token(token: str) -> SocialUserInfo:
     if payload.get("aud") != settings.google_client_id:
         raise UnauthorizedException("Google 클라이언트 ID가 일치하지 않습니다")
 
+    provider_id = payload.get("sub")
+    if provider_id is None:
+        raise UnauthorizedException("Google 토큰에 사용자 정보가 없습니다")
+
     return SocialUserInfo(
-        provider_id=payload["sub"],
+        provider_id=provider_id,
         email=payload.get("email"),
         avatar_url=payload.get("picture"),
     )
 
 async def verify_kakao_token(token: str) -> SocialUserInfo:
-    async with httpx.AsyncClient() as client:
+    async with httpx.AsyncClient(timeout=10.0) as client:
         resp = await client.get(
             KAKAO_USER_INFO_URL,
             headers={"Authorization": f"Bearer {token}"},
@@ -82,8 +93,12 @@ async def verify_kakao_token(token: str) -> SocialUserInfo:
     account = data.get("kakao_account", {})
     profile = account.get("profile", {})
 
+    kakao_id = data.get("id")
+    if kakao_id is None:
+        raise UnauthorizedException("Kakao 토큰에 사용자 정보가 없습니다")
+
     return SocialUserInfo(
-        provider_id=str(data["id"]),
+        provider_id=str(kakao_id),
         email=account.get("email"),
         avatar_url=profile.get("profile_image_url"),
     )

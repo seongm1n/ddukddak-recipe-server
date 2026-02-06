@@ -1,4 +1,5 @@
 import jwt
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.exceptions import UnauthorizedException
@@ -21,13 +22,18 @@ class AuthService:
         )
 
         if user is None:
-            user = await self.user_repo.create(
-                provider=provider,
-                provider_id=social_user.provider_id,
-                name=generate_nickname(),
-                email=social_user.email,
-                avatar_url=social_user.avatar_url,
-            )
+            try:
+                user = await self.user_repo.create(
+                    provider=provider,
+                    provider_id=social_user.provider_id,
+                    name=generate_nickname(),
+                    email=social_user.email,
+                    avatar_url=social_user.avatar_url,
+                )
+            except IntegrityError:
+                user = await self.user_repo.find_by_provider_and_provider_id(
+                    provider, social_user.provider_id
+                )
 
         return LoginResponse(
             user=UserResponse.model_validate(user),
