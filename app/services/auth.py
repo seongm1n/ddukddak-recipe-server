@@ -12,6 +12,7 @@ from app.services.social_auth import verify_social_token
 
 class AuthService:
     def __init__(self, session: AsyncSession) -> None:
+        self.session = session
         self.user_repo = UserRepository(session)
 
     async def login(self, provider: str, token: str) -> LoginResponse:
@@ -31,9 +32,12 @@ class AuthService:
                     avatar_url=social_user.avatar_url,
                 )
             except IntegrityError:
+                await self.session.rollback()
                 user = await self.user_repo.find_by_provider_and_provider_id(
                     provider, social_user.provider_id
                 )
+                if user is None:
+                    raise UnauthorizedException("로그인 처리 중 오류가 발생했습니다")
 
         return LoginResponse(
             user=UserResponse.model_validate(user),

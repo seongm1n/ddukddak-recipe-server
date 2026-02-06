@@ -23,7 +23,10 @@ async def verify_apple_token(token: str) -> SocialUserInfo:
         resp = await client.get(APPLE_JWKS_URL)
         jwks = resp.json()
 
-    header = jwt.get_unverified_header(token)
+    try:
+        header = jwt.get_unverified_header(token)
+    except jwt.DecodeError:
+        raise UnauthorizedException("유효하지 않은 Apple 토큰입니다")
     kid = header.get("kid")
 
     key = None
@@ -113,4 +116,7 @@ async def verify_social_token(provider: str, token: str) -> SocialUserInfo:
     verifier = PROVIDER_VERIFIERS.get(provider)
     if verifier is None:
         raise UnauthorizedException(f"지원하지 않는 프로바이더: {provider}")
-    return await verifier(token)
+    try:
+        return await verifier(token)
+    except httpx.HTTPError:
+        raise UnauthorizedException("소셜 인증 서버에 연결할 수 없습니다")
