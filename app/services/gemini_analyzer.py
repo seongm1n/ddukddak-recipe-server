@@ -52,7 +52,7 @@ class AnalyzedRecipe:
     servings: int
 
 
-def analyze_recipe_from_audio(auido_path: str) -> AnalyzedRecipe:
+def analyze_recipe_from_audio(audio_path: str) -> AnalyzedRecipe:
     """Gemini API로 오디오 파일에서 레시피를 분석한다."""
     try:
         with open(audio_path, "rb") as f:

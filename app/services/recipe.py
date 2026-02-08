@@ -81,10 +81,12 @@ class RecipeService:
         if not recipe:
             raise NotFoundException("레시피를 찾을 수 없습니다")
 
-        if await self.recipe_repo.is_saved_by_user(user_id, recipe_id):
+        try:
+            saved = await self.recipe_repo.save_for_user(user_id, recipe_id)
+        except IntegrityError:
+            await self.session.rollback()
             raise AppException("이미 저장된 레시피입니다", status.HTTP_409_CONFLICT)
 
-        saved = await self.recipe_repo.save_for_user(user_id, recipe_id)
         return self._to_response(recipe, saved_at=saved.created_at)
 
     async def list_saved(self, user_id: str) -> list[RecipeResponse]:
