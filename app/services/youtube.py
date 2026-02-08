@@ -33,7 +33,7 @@ def fetch_video_metadata(video_id: str) -> VideoMetadata:
     """YouTube Data API v3로 영상 메타데이터를 조회한다."""
     youtube = build("youtube", "v3", developerKey=settings.youtube_api_key)
 
-    response = youtube.videos().list(part="snippet", id=video_id).excute()
+    response = youtube.videos().list(part="snippet", id=video_id).execute()
 
     items = response.get("items", [])
     if not items:
@@ -42,7 +42,7 @@ def fetch_video_metadata(video_id: str) -> VideoMetadata:
     snippet = items[0]["snippet"]
     thumbnails = snippet["thumbnails"]
     thumbnail_url = (
-        thumbnails.get("maxresdefault", {}).get("url")
+        thumbnails.get("maxres", {}).get("url")
         or thumbnails.get("high", {}).get("url")
         or thumbnails.get("medium", {}).get("url", "")
     )

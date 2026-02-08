@@ -1,6 +1,10 @@
+import asyncio
 import logging
 
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from fastapi import status
 
 from app.core.exceptions import AppException, NotFoundException
 from app.repositories.recipe import RecipeRepository
@@ -26,13 +30,15 @@ class RecipeService:
             return self._to_response(cached)
 
         # YouTube 메타데이터 조회
-        metadata = youtube.fetch_video_metadata(video_id)
+        metadata = await asyncio.to_thread(youtube.fetch_video_metadata, video_id)
 
         # 오디오 추출 → Gemini 분석 → 임시파일 삭제
         audio_path = None
         try:
-            audio_path = audio_extractor.extract_audio(video_id)
-            analysis = gemini_analyzer.analyze_recipe_from_audio(audio_path)
+            audio_path = await asyncio.to_thread(audio_extractor.extract_audio, video_id)
+            analysis = await asyncio.to_thread(
+                gemini_analyzer.analyze_recipe_from_audio, audio_path
+            )
         finally:
             if audio_path:
                 audio_extractor.cleanup_audio(audio_path)
@@ -49,17 +55,23 @@ class RecipeService:
             for ing in analysis.ingredients
         ]
 
-        recipe = await self.recipe_repo.create(
-            video_id=video_id,
-            video_url=video_url,
-            title=metadata.title,
-            thumbnail_url=metadata.thumbnail_url,
-            channel_name=metadata.channel_name,
-            steps=analysis.steps,
-            total_cost=analysis.total_cost,
-            servings=analysis.servings,
-            ingredients_data=ingredients_data,
-        )
+        try:
+            recipe = await self.recipe_repo.create(
+                video_id=video_id,
+                video_url=video_url,
+                title=metadata.title,
+                thumbnail_url=metadata.thumbnail_url,
+                channel_name=metadata.channel_name,
+                steps=analysis.steps,
+                total_cost=analysis.total_cost,
+                servings=analysis.servings,
+                ingredients_data=ingredients_data,
+            )
+        except IntegrityError:
+            await self.session.rollback()
+            recipe = await self.recipe_repo.find_by_video_id(video_id)
+            if recipe is None:
+                raise AppException("레시피 분석 중 오류가 발생했습니다")
 
         return self._to_response(recipe)
 
@@ -70,15 +82,15 @@ class RecipeService:
             raise NotFoundException("레시피를 찾을 수 없습니다")
 
         if await self.recipe_repo.is_saved_by_user(user_id, recipe_id):
-            raise AppException("이미 저장된 레시피입니다")
+            raise AppException("이미 저장된 레시피입니다", status.HTTP_409_CONFLICT)
 
         saved = await self.recipe_repo.save_for_user(user_id, recipe_id)
         return self._to_response(recipe, saved_at=saved.created_at)
 
     async def list_saved(self, user_id: str) -> list[RecipeResponse]:
         """유저가 저장한 레시피 목록을 반환한다."""
-        recipes = await self.recipe_repo.find_saved_by_user(user_id)
-        return [self._to_response(r) for r in recipes]
+        results = await self.recipe_repo.find_saved_by_user(user_id)
+        return [self._to_response(recipe, saved_at=saved_at) for recipe, saved_at in results]
 
     async def delete_saved(self, recipe_id: str, user_id: str) -> None:
         """저장된 레시피를 삭제한다."""

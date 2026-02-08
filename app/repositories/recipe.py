@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from sqlalchemy import select, and_
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -71,17 +73,19 @@ class RecipeRepository:
         await self.session.refresh(recipe, ["ingredients"])
         return recipe
     
-    async def find_saved_by_user(self, user_id: str) -> list[Recipe]:
-        """유저가 저장한 레시피 목록을 조회한다."""
+    async def find_saved_by_user(
+        self, user_id: str
+    ) -> list[tuple[Recipe, datetime]]:
+        """유저가 저장한 레시피 목록을 조회한다. (Recipe, saved_at) 튜플 반환."""
         stmt = (
-            select(Recipe)
+            select(Recipe, UserSavedRecipe.created_at)
             .join(UserSavedRecipe)
             .where(UserSavedRecipe.user_id == user_id)
             .options(selectinload(Recipe.ingredients))
             .order_by(UserSavedRecipe.created_at.desc())
         )
         result = await self.session.execute(stmt)
-        return list(result.scalars().all())
+        return [(row[0], row[1]) for row in result.all()]
     
     async def save_for_user(self, user_id: str, recipe_id: str) -> UserSavedRecipe:
         """유저의 컬렉션에 레시피를 저장한다."""
