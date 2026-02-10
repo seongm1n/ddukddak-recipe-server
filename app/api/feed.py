@@ -10,7 +10,7 @@ router = APIRouter(prefix="/feed", tags=["feed"])
 
 @router.get("")
 async def list_feed(
-    user_id: CurrentUserId,
+    _user_id: CurrentUserId,
     session: DBSession,
     sort: str = Query("latest", pattern="^(latest|popular)$"),
     page: int = Query(1, ge=1),
@@ -24,7 +24,7 @@ async def list_feed(
 @router.get("/{recipe_id}")
 async def get_feed_detail(
     recipe_id: str,
-    user_id: CurrentUserId,
+    _user_id: CurrentUserId,
     session: DBSession,
 ) -> ApiResponse[FeedDetailResponse]:
     service = FeedService(session)

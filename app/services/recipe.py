@@ -1,12 +1,14 @@
 import asyncio
 import logging
 
+from sqlalchemy import update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import status
 
 from app.core.exceptions import AppException, NotFoundException
+from app.models.recipe import Recipe
 from app.repositories.recipe import RecipeRepository
 from app.schemas.recipe import IngredientResponse, RecipeResponse
 from app.services import audio_extractor, gemini_analyzer, youtube
@@ -88,8 +90,13 @@ class RecipeService:
             await self.session.rollback()
             raise AppException("이미 저장된 레시피입니다", status.HTTP_409_CONFLICT)
 
-        recipe.save_count += 1
-        await self.session.flush()
+        stmt = (
+            update(Recipe)
+            .where(Recipe.id == recipe_id)
+            .values(save_count=Recipe.save_count + 1)
+        )
+        await self.session.execute(stmt)
+        await self.session.refresh(recipe)
 
         return self._to_response(recipe, saved_at=saved.created_at)
 
@@ -105,10 +112,12 @@ class RecipeService:
 
         await self.recipe_repo.delete_saved(user_id, recipe_id)
 
-        recipe = await self.recipe_repo.find_by_id(recipe_id)
-        if recipe and recipe.save_count > 0:
-            recipe.save_count -= 1
-            await self.session.flush()
+        stmt = (
+            update(Recipe)
+            .where(Recipe.id == recipe_id, Recipe.save_count > 0)
+            .values(save_count=Recipe.save_count - 1)
+        )
+        await self.session.execute(stmt)
 
     def _to_response(self, recipe, saved_at=None) -> RecipeResponse:
         """Recipe 모델을 RecipeResponse로 변환한다."""
