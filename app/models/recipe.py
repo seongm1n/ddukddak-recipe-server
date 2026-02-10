@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import JSON
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, TimestampMixin, generate_uuid
+from app.models.user import User  # noqa: F401
 
 
 class Recipe(Base, TimestampMixin):
@@ -17,10 +18,15 @@ class Recipe(Base, TimestampMixin):
     steps: Mapped[list] = mapped_column(JSON)
     total_cost: Mapped[int] = mapped_column(Integer)
     servings: Mapped[int] = mapped_column(Integer)
+    save_count: Mapped[int] = mapped_column(Integer, default=0)
+    analyzed_by: Mapped[str | None] = mapped_column(
+        String(36), ForeignKey("users.id"), default=None
+    )
 
     ingredients: Mapped[list["Ingredient"]] = relationship(
         back_populates="recipe", cascade="all, delete-orphan"
     )
+    author: Mapped["User | None"] = relationship()
 
 
 class Ingredient(Base):

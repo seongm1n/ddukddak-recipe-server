@@ -19,7 +19,7 @@ class RecipeService:
         self.session = session
         self.recipe_repo = RecipeRepository(session)
 
-    async def analyze(self, video_url: str) -> RecipeResponse:
+    async def analyze(self, video_url: str, user_id: str) -> RecipeResponse:
         """유튜브 URL을 분석하여 레시피를 반환한다."""
         video_id = youtube.extract_video_id(video_url)
 
@@ -66,6 +66,7 @@ class RecipeService:
                 total_cost=analysis.total_cost,
                 servings=analysis.servings,
                 ingredients_data=ingredients_data,
+                analyzed_by=user_id,
             )
         except IntegrityError:
             await self.session.rollback()
@@ -87,6 +88,9 @@ class RecipeService:
             await self.session.rollback()
             raise AppException("이미 저장된 레시피입니다", status.HTTP_409_CONFLICT)
 
+        recipe.save_count += 1
+        await self.session.flush()
+
         return self._to_response(recipe, saved_at=saved.created_at)
 
     async def list_saved(self, user_id: str) -> list[RecipeResponse]:
@@ -100,6 +104,11 @@ class RecipeService:
             raise NotFoundException("저장된 레시피가 아닙니다")
 
         await self.recipe_repo.delete_saved(user_id, recipe_id)
+
+        recipe = await self.recipe_repo.find_by_id(recipe_id)
+        if recipe and recipe.save_count > 0:
+            recipe.save_count -= 1
+            await self.session.flush()
 
     def _to_response(self, recipe, saved_at=None) -> RecipeResponse:
         """Recipe 모델을 RecipeResponse로 변환한다."""

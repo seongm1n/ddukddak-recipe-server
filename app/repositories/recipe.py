@@ -42,6 +42,7 @@ class RecipeRepository:
             total_cost: int,
             servings: int,
             ingredients_data: list[dict],
+            analyzed_by: str | None = None,
     ) -> Recipe:
         """레시피와 재료를 함께 생성한다."""
         recipe = Recipe(
@@ -53,6 +54,7 @@ class RecipeRepository:
             steps=steps,
             total_cost=total_cost,
             servings=servings,
+            analyzed_by=analyzed_by,
         )
         self.session.add(recipe)
         await self.session.flush()
