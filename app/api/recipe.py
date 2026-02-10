@@ -15,7 +15,7 @@ async def analyze_recipe(
     session: DBSession,
 ) -> ApiResponse[RecipeResponse]:
     service = RecipeService(session)
-    result = await service.analyze(body.video_url)
+    result = await service.analyze(body.video_url, user_id)
     return ok(result)
 
 
