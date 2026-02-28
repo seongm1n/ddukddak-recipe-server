@@ -105,6 +105,22 @@ if az containerapp show --resource-group "$RESOURCE_GROUP" --name "$CONTAINER_AP
       "gemini-api-key=$GEMINI_API_KEY" \
       "youtube-api-key=$YOUTUBE_API_KEY" \
     --output none
+
+  az containerapp update \
+    --resource-group "$RESOURCE_GROUP" \
+    --name "$CONTAINER_APP_NAME" \
+    --set-env-vars \
+      "DATABASE_URL=secretref:database-url" \
+      "JWT_SECRET=secretref:jwt-secret" \
+      "GEMINI_API_KEY=secretref:gemini-api-key" \
+      "YOUTUBE_API_KEY=secretref:youtube-api-key" \
+      "APPLE_CLIENT_ID=com.ddukddak.recipe" \
+      "GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID" \
+      "KAKAO_CLIENT_ID=$KAKAO_CLIENT_ID" \
+      "DEBUG=false" \
+      "ACCESS_TOKEN_EXPIRE_MINUTES=60" \
+      "REFRESH_TOKEN_EXPIRE_DAYS=30" \
+    --output none
 else
   log "Creating Container App: $CONTAINER_APP_NAME"
   az containerapp create \
@@ -169,7 +185,7 @@ else
       "name": "github-actions-deploy",
       "issuer": "https://token.actions.githubusercontent.com",
       "subject": "repo:'"$GITHUB_ORG"'/'"$GITHUB_REPO"':ref:refs/heads/'"$GITHUB_BRANCH"'",
-      "description": "GitHub Actions OIDC for dev branch deployment",
+      "description": "GitHub Actions OIDC for '"$GITHUB_BRANCH"' branch deployment",
       "audiences": ["api://AzureADTokenExchange"]
     }' \
     --output none
