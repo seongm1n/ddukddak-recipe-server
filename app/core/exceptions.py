@@ -42,6 +42,21 @@ class RateLimitException(AppException):
         )
 
 
+class VideoNotFoundException(AppException):
+    def __init__(self) -> None:
+        super().__init__("영상을 찾을 수 없습니다", status.HTTP_404_NOT_FOUND)
+
+
+class AudioExtractionException(AppException):
+    def __init__(self) -> None:
+        super().__init__("오디오 추출에 실패했습니다", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RecipeAnalysisException(AppException):
+    def __init__(self) -> None:
+        super().__init__("레시피 분석에 실패했습니다", status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 def register_exception_handlers(app: FastAPI) -> None:
     """전역 예외 핸들러를 FastAPI 앱에 등록한다."""
 
