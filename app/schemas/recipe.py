@@ -30,5 +30,6 @@ class RecipeResponse(BaseSchema):
     ingredients: list[IngredientResponse]
     total_cost: int
     servings: int
+    analyzed_by: str | None = None
     saved_at: datetime | None = None
     

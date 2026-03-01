@@ -141,5 +141,6 @@ class RecipeService:
             ],
             total_cost=recipe.total_cost,
             servings=recipe.servings,
+            analyzed_by=recipe.analyzed_by,
             saved_at=saved_at,
         )
