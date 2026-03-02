@@ -9,7 +9,7 @@ from app.core.exceptions import AppException, VideoNotFoundException
 settings = get_settings()
 
 _VIDEO_ID_PATTERN = re.compile(
-    r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/)([a-zA-Z0-9_-]{11})"
+    r"(?:youtube\.com/watch\?v=|youtu\.be/|youtube\.com/embed/|youtube\.com/shorts/)([a-zA-Z0-9_-]{11})"
 )
 
 
