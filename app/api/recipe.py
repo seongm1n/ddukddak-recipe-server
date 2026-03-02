@@ -2,7 +2,7 @@ from fastapi import APIRouter, status
 
 from app.core.dependencies import CurrentUserId, DBSession
 from app.schemas.base import ApiResponse, ok
-from app.schemas.recipe import AnalyzeRequest, RecipeResponse, SaveRequest
+from app.schemas.recipe import AnalyzeRequest, AnalyzeResponse, RecipeResponse, SaveRequest
 from app.services.recipe import RecipeService
 
 router = APIRouter(prefix="/recipe", tags=["recipe"])
@@ -13,10 +13,10 @@ async def analyze_recipe(
     body: AnalyzeRequest,
     user_id: CurrentUserId,
     session: DBSession,
-) -> ApiResponse[RecipeResponse]:
+) -> ApiResponse[AnalyzeResponse]:
     service = RecipeService(session)
     result = await service.analyze(body.video_url, user_id)
-    return ok(result)
+    return ok(AnalyzeResponse(recipe=result))
 
 
 @router.post("/save", status_code=status.HTTP_201_CREATED)

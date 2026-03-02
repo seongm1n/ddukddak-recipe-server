@@ -32,4 +32,7 @@ class RecipeResponse(BaseSchema):
     servings: int
     analyzed_by: str | None = None
     saved_at: datetime | None = None
-    
+
+
+class AnalyzeResponse(BaseSchema):
+    recipe: RecipeResponse
