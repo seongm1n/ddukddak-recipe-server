@@ -11,7 +11,7 @@ from app.core.exceptions import AppException, NotFoundException
 from app.models.recipe import Recipe
 from app.repositories.recipe import RecipeRepository
 from app.schemas.recipe import IngredientResponse, RecipeResponse
-from app.services import audio_extractor, gemini_analyzer, youtube
+from app.services import gemini_analyzer, youtube
 
 logger = logging.getLogger(__name__)
 
@@ -34,16 +34,10 @@ class RecipeService:
         # YouTube 메타데이터 조회
         metadata = await asyncio.to_thread(youtube.fetch_video_metadata, video_id)
 
-        # 오디오 추출 → Gemini 분석 → 임시파일 삭제
-        audio_path = None
-        try:
-            audio_path = await asyncio.to_thread(audio_extractor.extract_audio, video_id)
-            analysis = await asyncio.to_thread(
-                gemini_analyzer.analyze_recipe_from_audio, audio_path
-            )
-        finally:
-            if audio_path:
-                audio_extractor.cleanup_audio(audio_path)
+        # Gemini로 YouTube 영상 직접 분석
+        analysis = await asyncio.to_thread(
+            gemini_analyzer.analyze_recipe_from_video, video_url
+        )
 
         # DB 저장 (캐시)
         ingredients_data = [
