@@ -3,7 +3,8 @@ import logging
 from dataclasses import dataclass
 
 from google import genai
-from google.genai.types import GenerateContentConfig, Part
+from google.genai import types
+from google.genai.types import GenerateContentConfig
 
 from app.core.config import get_settings
 from app.core.exceptions import RecipeAnalysisException
@@ -14,7 +15,7 @@ settings = get_settings()
 
 client = genai.Client(api_key=settings.gemini_api_key)
 
-_RECIPE_PROMPT = """당신은 전문 레시피 분석가입니다. 이 요리 영상의 오디오를 분석하여 레시피를 추출하세요.
+_RECIPE_PROMPT = """당신은 전문 레시피 분석가입니다. 이 요리 영상을 분석하여 레시피를 추출하세요.
 
 다음 JSON 형식으로만 응답하세요:
 
@@ -52,18 +53,19 @@ class AnalyzedRecipe:
     servings: int
 
 
-def analyze_recipe_from_audio(audio_path: str) -> AnalyzedRecipe:
-    """Gemini API로 오디오 파일에서 레시피를 분석한다."""
+def analyze_recipe_from_video(video_url: str) -> AnalyzedRecipe:
+    """Gemini API로 YouTube 영상에서 레시피를 분석한다."""
     try:
-        with open(audio_path, "rb") as f:
-            audio_bytes = f.read()
-
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=[
-                Part.from_bytes(data=audio_bytes, mime_type="audio/mp4"),
-                _RECIPE_PROMPT,
-            ],
+            contents=types.Content(
+                parts=[
+                    types.Part(
+                        file_data=types.FileData(file_uri=video_url),
+                    ),
+                    types.Part(text=_RECIPE_PROMPT),
+                ],
+            ),
             config=GenerateContentConfig(
                 response_mime_type="application/json",
                 temperature=0.3,
