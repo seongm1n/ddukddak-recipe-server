@@ -76,3 +76,10 @@ class AuthService:
         if user is None:
             raise UnauthorizedException("존재하지 않는 사용자입니다")
         return UserResponse.model_validate(user)
+
+    async def delete_account(self, user_id: str) -> None:
+        """사용자 계정과 관련 데이터를 삭제한다."""
+        user = await self.user_repo.find_by_id(user_id)
+        if user is None:
+            raise UnauthorizedException("존재하지 않는 사용자입니다")
+        await self.user_repo.delete(user_id)

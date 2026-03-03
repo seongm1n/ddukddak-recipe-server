@@ -29,3 +29,9 @@ async def get_me(user_id: CurrentUserId, session: DBSession) -> ApiResponse[User
     service = AuthService(session)
     result = await service.get_me(user_id)
     return ok(result)
+
+@router.delete("/me")
+async def delete_account(user_id: CurrentUserId, session: DBSession) -> ApiResponse[None]:
+    service = AuthService(session)
+    await service.delete_account(user_id)
+    return ok(None)
