@@ -85,7 +85,10 @@ class AuthService:
             refresh_token=new_refresh,
         )
 
-    def logout(self, refresh_token: str) -> None:
+    def logout(self, refresh_token: str, user_id: str) -> None:
+        owner = token_store.verify(refresh_token)
+        if owner != user_id:
+            raise UnauthorizedException("유효하지 않은 리프레시 토큰입니다")
         token_store.revoke(refresh_token)
 
     async def get_me(self, user_id: str) -> UserResponse:
