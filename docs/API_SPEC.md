@@ -94,6 +94,14 @@ Bearer 토큰 방식. `Authorization: Bearer <access_token>` 헤더 필수 (로�
 
 **Headers**: `Authorization: Bearer <access_token>`
 
+**Request**
+
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIs..."
+}
+```
+
 **Response 200**
 
 ```json
