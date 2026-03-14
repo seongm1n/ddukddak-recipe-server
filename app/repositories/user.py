@@ -1,6 +1,7 @@
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.recipe import UserSavedRecipe, Recipe
 from app.models.user import User
 
 
@@ -39,3 +40,21 @@ class UserRepository:
         self.session.add(user)
         await self.session.flush()
         return user
+
+    async def delete(self, user_id: str) -> None:
+        """사용자 계정과 관련 데이터를 삭제한다."""
+        # 저장된 레시피 연결 해제
+        await self.session.execute(
+            delete(UserSavedRecipe).where(UserSavedRecipe.user_id == user_id)
+        )
+
+        # analyzed_by NULL 처리
+        await self.session.execute(
+            update(Recipe).where(Recipe.analyzed_by == user_id).values(analyzed_by=None)
+        )
+
+        # 사용자 삭제
+        user = await self.session.get(User, user_id)
+        if user:
+            await self.session.delete(user)
+            await self.session.flush()

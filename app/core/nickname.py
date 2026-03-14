@@ -58,4 +58,4 @@ _NOUNS = [
 def generate_nickname() -> str:
     adj = random.choice(_ADJECTIVES)
     noun = random.choice(_NOUNS)
-    return f"{adj} {noun}"
+    return f"{adj}{noun}"

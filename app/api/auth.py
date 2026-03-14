@@ -15,7 +15,9 @@ async def login(body: LoginRequest, session: DBSession) -> ApiResponse[LoginResp
     return ok(result)
 
 @router.post("/logout")
-async def logout(user_id: CurrentUserId) -> ApiResponse[None]:
+async def logout(body: RefreshRequest, user_id: CurrentUserId, session: DBSession) -> ApiResponse[None]:
+    service = AuthService(session)
+    service.logout(body.refresh_token, user_id)
     return ok(None)
 
 @router.post("/refresh")
@@ -29,3 +31,9 @@ async def get_me(user_id: CurrentUserId, session: DBSession) -> ApiResponse[User
     service = AuthService(session)
     result = await service.get_me(user_id)
     return ok(result)
+
+@router.delete("/me")
+async def delete_account(user_id: CurrentUserId, session: DBSession) -> ApiResponse[None]:
+    service = AuthService(session)
+    await service.delete_account(user_id)
+    return ok(None)
